@@ -31,7 +31,7 @@ experiments/phase0-prompt/
 
 ## ステップ1：環境準備
 
-**前提**：llama.cpp serverは既にビルド済み（WSL2 + CUDA動作確認済み）と想定。
+**前提**：llama.cpp serverは既にWindows上でビルド済み（CUDA動作確認済み）と想定。
 
 作業：
 1. Gemma 4 E4B（Q4_K_M）のGGUFダウンロード（Hugging Face unsloth/bartowski等から）
@@ -96,7 +96,7 @@ experiments/phase0-prompt/
 - 対処：プロンプトで「4つの合計が100になるように」と明示
 - または後処理で正規化
 
-### 5. WSL2でのVRAM管理
+### 5. VRAM管理
 - `nvidia-smi`で使用量を並行監視
 - 8GB VRAMで余裕あるか確認。厳しければ`-ngl`を調整
 

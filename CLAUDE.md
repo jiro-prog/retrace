@@ -110,9 +110,9 @@ Phase 1以降、`.claude/agents/architect.md`と`implementer.md`を導入して*
 - [Fastify](https://fastify.dev/)
 - [Web Speech API (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
 
-## 開発者：So（日本・Windows WSL2 + RTX 3060 Ti 8GB）
+## 開発者：So（日本・Windows + RTX 4060 Ti 8GB）
 
 環境特有の注意点：
-- llama.cpp serverはWSL2内で立ち上げる前提
-- スマホからのアクセスは`netsh interface portproxy`等でWindows側ポート開放が必要な場合あり
+- llama.cpp serverはWindows上で直接起動する前提
+- スマホからのアクセスは同一Wi-Fi + Windowsファイアウォール許可が必要な場合あり
 - 8GB VRAMでGemma 4 E4Bを運用。Qwen 3.5 9Bは量子化とオフロード設定次第

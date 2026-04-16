@@ -10,7 +10,7 @@
 │ (STT + TTS)     │        │  │  (OpenAI互換API) │
 └─────────────────┘        │  └ SQLite            │
                            └──────────────────────┘
-        同一Wi-Fi（WSL2ブリッジ要注意）
+        同一Wi-Fi
 ```
 
 ### スマホ側（React PWA）
@@ -300,5 +300,5 @@ interface Pattern {
 3. **Web Speech APIのiOS対応の弱さ**
    - iPhoneユーザー向けにはテキスト入力フォールバック必須
 
-4. **WSL2環境でのスマホからの到達性**
-   - `netsh interface portproxy`設定が必要な場合あり
+4. **スマホからの到達性**
+   - 同一Wi-Fi + Windowsファイアウォール許可が必要な場合あり
