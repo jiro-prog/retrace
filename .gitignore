@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# LLM models（絶対にコミットしない）
+*.gguf
+models/
+
+# Phase 0 results（試行錯誤の結果、共有したければresults/published/に別途）
+experiments/phase0-prompt/results/*.md
+!experiments/phase0-prompt/results/README.md
+
+# Logs
+*.log
+npm-debug.log*
+
+# SQLite
+*.sqlite
+*.db

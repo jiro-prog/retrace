@@ -1,0 +1,28 @@
+# Retrace Response Grammar (GBNF)
+# 容疑者リストJSON出力を強制する
+# llama.cpp server起動時に --grammar-file で指定
+
+root ::= "{" ws
+  "\"dialogue\":" ws string "," ws
+  "\"suspects\":" ws suspects-array "," ws
+  "\"next_action\":" ws string "," ws
+  "\"clue_level\":" ws clue-level
+  ws "}"
+
+# 容疑者は必ず4件
+suspects-array ::= "[" ws suspect ws "," ws suspect ws "," ws suspect ws "," ws suspect ws "]"
+
+suspect ::= "{" ws
+  "\"location\":" ws string "," ws
+  "\"confidence\":" ws number
+  ws "}"
+
+clue-level ::= "\"scarce\"" | "\"getting_closer\"" | "\"core\""
+
+# JSON primitives
+string ::= "\"" ([^"\\\x00-\x1f] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F]{4}))* "\""
+
+# confidenceは0〜100の整数を想定
+number ::= ("0" | [1-9] [0-9]{0,2})
+
+ws ::= [ \t\n]*
