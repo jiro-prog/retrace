@@ -66,6 +66,8 @@ ChatGPTのGPTs（Treasure-Finder Extraordinaire等）にも似た試みはある
 - [仕様書 v0.2](docs/02-spec.md)
 - [類似プロジェクト調査](docs/03-competitive-analysis.md)
 - [Phase 0 検証計画](docs/04-phase0-plan.md)
+- [Phase 0 検証結果](docs/05-phase0-results.md)
+- [Phase 1 設計書](docs/06-phase1-design.md)
 
 ## ライセンス
 
