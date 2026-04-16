@@ -1,6 +1,6 @@
 # Retrace Response Grammar (GBNF)
 # 容疑者リストJSON出力を強制する
-# llama.cpp server起動時に --grammar-file で指定
+# APIリクエストのgrammarパラメータで渡す
 
 root ::= "{" ws
   "\"dialogue\":" ws string "," ws

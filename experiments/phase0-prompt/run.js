@@ -4,10 +4,10 @@
  *
  * 使い方：
  *   1. llama.cpp serverを別ターミナルで起動しておく
- *      ./llama-server -m models/gemma-4-e4b-it-Q4_K_M.gguf \
- *        --host 127.0.0.1 --port 8080 \
- *        --ctx-size 8192 --n-gpu-layers 999 \
- *        --grammar-file grammars/retrace-response.gbnf
+ *      C:\Users\sojir\projects\llama.cpp\bin\llama-server.exe ^
+ *        -m C:\Users\sojir\projects\models\google_gemma-4-E4B-it-Q4_K_M.gguf ^
+ *        --host 127.0.0.1 --port 8080 ^
+ *        --ctx-size 8192 --n-gpu-layers 999
  *
  *   2. node run.js <シナリオ番号>
  *      例：node run.js 1
@@ -17,8 +17,11 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LLAMA_ENDPOINT = 'http://127.0.0.1:8080/v1/chat/completions';
+const GBNF_PATH = path.join(__dirname, 'grammars', 'retrace-response.gbnf');
 
 // システムプロンプトを読み込む（実際はprompts/から抽出）
 const SYSTEM_PROMPT = `
@@ -65,7 +68,7 @@ const SCENARIOS = {
   // 追加は必要に応じて
 };
 
-async function callLlama(messages) {
+async function callLlama(messages, grammar) {
   const res = await fetch(LLAMA_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -74,7 +77,7 @@ async function callLlama(messages) {
       messages,
       temperature: 0.7,
       max_tokens: 512,
-      // llama.cpp serverの起動時にgrammar-fileを指定している前提
+      grammar,
     }),
   });
   if (!res.ok) {
@@ -96,6 +99,8 @@ async function main() {
   console.log(`\n=== シナリオ${scenarioId}：${scenario.name} ===\n`);
   console.log(`依頼文：${scenario.initial}\n`);
 
+  const grammar = await fs.readFile(GBNF_PATH, 'utf-8');
+
   const messages = [
     { role: 'system', content: SYSTEM_PROMPT },
     { role: 'user', content: scenario.initial },
@@ -103,7 +108,7 @@ async function main() {
 
   // 1ターン目
   console.log('--- ターン1 ---');
-  const turn1 = await callLlama(messages);
+  const turn1 = await callLlama(messages, grammar);
   console.log(turn1);
 
   let parsed;
@@ -125,7 +130,7 @@ async function main() {
   console.log(`\n--- ターン2（入力：${turn2Input}） ---`);
   messages.push({ role: 'user', content: turn2Input });
 
-  const turn2 = await callLlama(messages);
+  const turn2 = await callLlama(messages, grammar);
   console.log(turn2);
 
   messages.push({ role: 'assistant', content: turn2 });
