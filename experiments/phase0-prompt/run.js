@@ -42,13 +42,21 @@ const SYSTEM_PROMPT = `
 
 ## 確度のルール
 - 4項目の合計が100になるようにする
+- 助手が確認済みと報告した場所は confidence を 0 にし、残りで100に再配分する
+- 4番目は必ず「その他」にする（具体的な場所名を入れない）
+
+## dialogueのルール
+- 3文以内に収める。簡潔に、しかし探偵らしく
 
 ## 出力形式
 必ず以下のJSON形式だけで応答してください：
 {
-  "dialogue": "探偵の発言",
+  "dialogue": "探偵の発言（3文以内）",
   "suspects": [
-    {"location": "場所名", "confidence": 数値}
+    {"location": "場所名", "confidence": 数値},
+    {"location": "場所名", "confidence": 数値},
+    {"location": "場所名", "confidence": 数値},
+    {"location": "その他", "confidence": 数値}
   ],
   "next_action": "助手への次の指示",
   "clue_level": "scarce" | "getting_closer" | "core"
@@ -65,7 +73,18 @@ const SCENARIOS = {
     name: 'イヤホン',
     initial: 'ワイヤレスイヤホンが見つかりません。今朝の通勤で使ったのが最後です。電車を降りてカバンを開けて、何か取り出した気がします。',
   },
-  // 追加は必要に応じて
+  3: {
+    name: '書類（確定申告）',
+    initial: '確定申告の書類が見つかりません。1週間前に机で開いたのが最後です。その時、電話がかかってきて中断しました。',
+  },
+  5: {
+    name: 'メガネ',
+    initial: 'メガネが見つかりません。朝起きた時にあったはずです。トイレに行って、顔を洗って、それから探し始めました。',
+  },
+  9: {
+    name: '子供の弁当箱の蓋',
+    initial: '弁当箱の蓋だけが見つかりません。子供が昨日保育園から帰ってきて、キッチンに置いたはずなんですが、本体はあるのに蓋だけがないんです。',
+  },
 };
 
 async function callLlama(messages, grammar) {
@@ -76,7 +95,7 @@ async function callLlama(messages, grammar) {
       model: 'gemma-4-e4b',
       messages,
       temperature: 0.7,
-      max_tokens: 512,
+      max_tokens: 1024,
       grammar,
     }),
   });

@@ -55,8 +55,8 @@ ChatGPTのGPTs（Treasure-Finder Extraordinaire等）にも似た試みはある
 - [x] コンセプト設計
 - [x] 類似プロジェクト調査（→ [docs/03-competitive-analysis.md](docs/03-competitive-analysis.md)）
 - [x] 仕様書 v0.2（→ [docs/02-spec.md](docs/02-spec.md)）
-- [ ] **Phase 0：プロンプト検証**（← 現在ここ）
-- [ ] Phase 1：MVP（通信・推理・UI通し動作）
+- [x] **Phase 0：プロンプト検証**（条件付き合格 → [結果](docs/05-phase0-results.md)）
+- [ ] **Phase 1：MVP**（← 現在ここ）
 - [ ] Phase 2：蓄積価値（パターンDB・事件ファイル）
 - [ ] Phase 3：磨き込み（演出・画像対応）
 
