@@ -1,0 +1,14 @@
+{
+  "name": "retrace",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev:server": "npm -w server run dev",
+    "dev:client": "npm -w client run dev",
+    "build": "npm -w server run build && npm -w client run build"
+  }
+}

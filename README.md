@@ -48,7 +48,7 @@ ChatGPTのGPTs（Treasure-Finder Extraordinaire等）にも似た試みはある
 
 ## ステータス
 
-**Phase 0：プロンプト検証中**（2026年4月〜）
+**Phase 1a 完了**（2026-04-17、テキスト通しプレイ動作確認）
 
 本プロジェクトは個人開発、段階的に進行。
 
@@ -56,7 +56,8 @@ ChatGPTのGPTs（Treasure-Finder Extraordinaire等）にも似た試みはある
 - [x] 類似プロジェクト調査（→ [docs/03-competitive-analysis.md](docs/03-competitive-analysis.md)）
 - [x] 仕様書 v0.2（→ [docs/02-spec.md](docs/02-spec.md)）
 - [x] **Phase 0：プロンプト検証**（条件付き合格 → [結果](docs/05-phase0-results.md)）
-- [ ] **Phase 1：MVP**（← 現在ここ）
+- [x] **Phase 1a：テキスト通しプレイ**（事件作成→対話→解決が完走、→ [設計書](docs/06-phase1-design.md)）
+- [ ] **Phase 1b：音声・HTTPS・PWA**（← 次）
 - [ ] Phase 2：蓄積価値（パターンDB・事件ファイル）
 - [ ] Phase 3：磨き込み（演出・画像対応）
 

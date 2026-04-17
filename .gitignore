@@ -30,4 +30,8 @@ npm-debug.log*
 
 # SQLite
 *.sqlite
+*.sqlite-*
 *.db
+
+# TypeScript incremental build cache
+*.tsbuildinfo
