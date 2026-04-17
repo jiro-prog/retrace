@@ -56,6 +56,7 @@
 | `GET` | `/api/cases/:id` | 事件詳細（会話履歴・容疑者含む） |
 | `PATCH` | `/api/cases/:id/solve` | 事件解決（foundLocation を記録） |
 | `PATCH` | `/api/cases/:id/cold` | 迷宮入り |
+| `PATCH` | `/api/cases/:id/check-suspect` | 容疑者を確認済みにする（body: `{ location }`） |
 
 ### リクエスト/レスポンス例
 
@@ -80,6 +81,13 @@
 {
   foundLocation: string;  // "コートのポケット"
 }
+
+// PATCH /api/cases/:id/check-suspect
+// Request — 助手が「この場所は見たけど無かった」と報告したことの記録
+{
+  location: string;       // "コートのポケット"（容疑者リストに存在する場所）
+}
+// Response: 最新ターンのsuspectsスナップショット（checked=1, result='not_found' 反映済み）
 ```
 
 ## 2. WebSocketプロトコル
@@ -211,6 +219,7 @@ CREATE INDEX idx_patterns_item ON patterns(item);
 - `suspects`はターンごとにスナップショット保存。最新の状態は`MAX(turn_number)`で取得
 - `raw_llm_json`を残すことで、Phase 0的な検証をプロダクション中でも行える
 - `patterns`は解決時に1レコード追加。集計はSELECTで行う（Phase 2）
+- **`checked`フラグのターン跨ぎ継承**：新ターンのスナップショットを生成する際、直前ターンの同一 `location` に `checked=1` が立っていれば、新ターンのレコードにも継承する。これにより「一度シロ判定された場所」は以降のターンで confidence=0 の後処理対象として保持される
 
 ## 4. フォルダ構成
 
@@ -282,11 +291,11 @@ retrace/
 | # | 項目 | 対処場所 | 方針 |
 |---|---|---|---|
 | 1 | パース失敗リトライ | `server/services/detective.ts` | 最大2回再送。3回失敗でWebSocketにerror送信 |
-| 2 | GBNF突破の原因調査 | Phase 1a初期 | llama-server起動パラメータとgrammar指定方法を再確認。API側の`grammar`パラメータ指定も試す |
+| 2 | GBNF突破の原因調査 | Phase 1a初期（**解決済み**） | 調査結果：GBNF ファイルを API の `grammar` パラメータで渡すと llama-server に silent reject される（simple grammarは通る）。原因を深掘るより、llama.cpp native の `response_format: json_schema` に移行する方が JSON Schema 標準仕様でメンテナンス容易かつ同等の構造保証が得られるため移行。GBNFファイルはPhase 0検証遺物として保持 |
 | 3 | システムプロンプトのトークン予算 | `server/services/prompt.ts` | システムプロンプト≦500トークン目標。会話履歴は直近10ターンに制限（古いターンは要約して圧縮、Phase 2で検討） |
 | 4 | 登場人物の行動推理指示 | プロンプト追加 | 「依頼文に他者（子供・ペット等）が登場する場合、その行動パターンも推理に含めよ」を1行追加 |
 | 5 | 失くし物の深刻度トーン調整 | プロンプト追加 | 「失くし物の性質に応じて語気を調整せよ。日用品は軽く、貴重品は真剣に」を1行追加 |
-| 6 | 確認済み→0%の後処理正規化 | `server/services/detective.ts` | LLM応答パース後、checked=trueの場所のconfidenceを0に上書き、残りを合計100に再配分 |
+| 6 | 確認済み→0%の後処理正規化 | `server/services/detective.ts` | LLM応答パース後、checked=trueの場所のconfidenceを0に上書き、残りを合計100に再配分。**checked=true への遷移経路**：容疑者リスト行の「シロでした」ボタン押下で `PATCH /api/cases/:id/check-suspect` を発火（Phase 1a・A案）。LLM応答からの自動抽出（B案）はPhase 1b以降でパーク |
 
 ## 6. 実装順序
 
@@ -365,3 +374,17 @@ Phase 0ではサーバー起動時に`--grammar-file`を指定していたが、
 2. **会話履歴の上限**：10ターンで足りるか → 実測して判断。ctx-size 8192トークンから逆算
 3. **フロントのルーティング**：React Router vs 単一ページ → MVP時点では単一ページ内の状態切替（Zustand）で十分と判断。ページ数が増えたらRouter導入
 4. **CORSとプロキシ**：開発時のclient（Vite :5173）→ server（:3000）通信 → Viteのproxy設定で対処
+5. **checkedの自動抽出（B案）**：Phase 1aはUI起点（A案）で実装。将来、LLM応答に`checked_locations`フィールドを追加してGBNF経由で抽出する方向はPhase 1b以降で検討。引き継ぎ項目#2（GBNF突破調査）完了後に再評価
+
+## 9. Phase 1a 通しプレイで判明した課題（Phase 1a スコープ外、Phase 2 で検討）
+
+### 1. location 名の表記ゆれで checked 継承が壊れる
+
+- **症状**：ターン跨ぎで LLM が微妙に location 名を変える（例：ターン1「玄関のコート掛け付近」→ ターン3「玄関のコート掛け」）。`saveSuspectSnapshot` の継承ロジックは文字列完全一致なので、新ターンのスナップショットに checked フラグが引き継がれず、confidence=0 の後処理が空振りする
+- **発見**：2026-04-17 Phase 1a 通しプレイ
+- **Phase 1a 判断**：許容（通しプレイは完走できる、checked 機能が特定ターンで無効化される程度の影響）
+- **対処候補**：
+  - A. プロンプトに「過去ターンの location 名を再利用せよ」を明示
+  - B. 後処理で Levenshtein 距離や部分一致で類似判定、閾値以上は同一 location とみなして継承
+  - C. LLM に `checked_locations` を出力させる B 案（§8-5）と組み合わせる
+- **Phase 2 で再評価**：パターン DB 蓄積と合流させて、location の正規化ロジックを設計する

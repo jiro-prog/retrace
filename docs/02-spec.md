@@ -44,28 +44,42 @@
 - `/v1/chat/completions`エンドポイント使用
 - Node.js側は`openai` npmパッケージで`baseURL`書き換えて叩く
 
-### GBNF Grammar（JSON構造化出力の強制）
-```gbnf
-root ::= "{" ws
-  "\"dialogue\":" ws string "," ws
-  "\"suspects\":" ws "[" suspect ("," ws suspect)* "]" "," ws
-  "\"next_action\":" ws string "," ws
-  "\"clue_level\":" ws clue-level
-  ws "}"
+### 構造化出力の強制（json_schema）
 
-suspect ::= "{" ws
-  "\"location\":" ws string "," ws
-  "\"confidence\":" ws number
-  ws "}"
+llama.cppの `response_format: { type: "json_schema", json_schema: {...} }` 機能で出力形式を強制する。TypeScript型定義と1対1に対応するJSON Schemaを渡すだけで済み、デバッグ容易。
 
-clue-level ::= "\"scarce\"" | "\"getting_closer\"" | "\"core\""
-
-string ::= "\"" ([^"\\] | "\\" .)* "\""
-number ::= [0-9]+
-ws ::= [ \t\n]*
+```typescript
+const schema = {
+  type: 'object',
+  required: ['dialogue', 'suspects', 'next_action', 'clue_level'],
+  properties: {
+    dialogue: { type: 'string' },
+    suspects: {
+      type: 'array',
+      minItems: 4, maxItems: 4,
+      items: {
+        type: 'object',
+        required: ['location', 'confidence'],
+        properties: {
+          location: { type: 'string' },
+          confidence: { type: 'integer', minimum: 0, maximum: 100 },
+        },
+      },
+    },
+    next_action: { type: 'string' },
+    clue_level: { type: 'string', enum: ['scarce', 'getting_closer', 'core'] },
+  },
+};
 ```
 
-これで**パース失敗が原理的に起きない**。リトライロジック不要。
+これで**パース失敗が原理的に起きない**。
+
+#### 経緯（GBNF → json_schema）
+
+- Phase 0 ではGBNF Grammarファイル（`experiments/phase0-prompt/grammars/retrace-response.gbnf`）で検証
+- Phase 1a でAPIリクエスト側に渡す方式を試した結果、GBNF側に silent reject される問題が発覚（Phase 0引き継ぎ#2「GBNF突破の原因調査」の結論）
+- llama.cppは内部で json_schema → GBNF 変換を行うため**構造保証レベルは同等**、かつ JSON Schema は標準仕様でメンテナンスが容易
+- GBNFファイルはPhase 0の検証遺物として保持（削除はしない）
 
 ## 3. 機能仕様
 
@@ -204,8 +218,8 @@ interface Message {
 interface Suspect {
   location: string;
   confidence: number;
-  checked: boolean;
-  result?: 'found' | 'not_found';
+  checked: boolean;              // 助手が「確認動作」を発生させた（見たが無かった）場合に true
+  result?: 'found' | 'not_found'; // 確認結果。foundは解決時、not_foundはchecked=trueと連動
 }
 
 // パターンDB（蓄積価値）

@@ -1,118 +1,106 @@
-# CLAUDE.md — Retrace Project Guidelines
+# Retrace プロジェクト規範
 
-このファイルはClaude Code（および人間の開発者）がRetraceプロジェクトで作業する際の原則を定める。
+スマホ起点 × ローカルLLM × 探偵ロールプレイ × 蓄積学習で失くし物探しを再発明するプロダクト。
 
-## プロジェクトミッション
+本質優先。実装コストや流行りに流されない。
 
-**Retraceは「スマホ起点×ローカルLLM×探偵ロールプレイ×蓄積学習」によって失くし物探しを再発明するプロダクトである。**
+# 開発スタイル
 
-実装コストや流行りの技術に流されず、**本質的かどうか**を常に優先する。
-
-## 技術スタック（固定）
-
-以下は**勝手に変更しない**。変更提案がある場合は必ず人間に相談する。
-
-### フロントエンド
-- **React 18 + Vite + TypeScript**
-- **Tailwind CSS**
-- **Zustand**（状態管理、Redux/Jotai等への変更禁止）
-- **Web Speech API**（音声入出力）
-- **vite-plugin-pwa**（PWA化）
-
-### バックエンド
-- **Node.js 20+ + Fastify**（Express/Hono等への変更禁止）
-- **@fastify/websocket**
-- **better-sqlite3**（同期API重視）
-- **openai** npm パッケージ（llama.cpp serverをOpenAI互換で叩く）
-
-### LLM
-- **llama.cpp server**（Ollama等への変更禁止）
-- **Gemma 4 E4B（Q4_K_M）**を初期採用（後でQwen 3.5 9Bと比較予定）
-- **GBNF Grammar**で構造化出力を強制
-
-### 開発環境
-- **mkcert**（ローカルHTTPS、Web Speech API必須条件）
-- 同一Wi-Fi前提（初期フェーズ）
-
-## 絶対禁止事項
-
-1. **クラウドAI APIへの送信禁止**
-   - OpenAI API、Anthropic API、Google Gemini API等への接続コードを書かない
-   - Retraceの核心はプライバシー完結。ここが崩れたら存在意義が消える
-
-2. **個人データの外部送信禁止**
-   - 事件記録、捜査ログ、音声データ、画像データは全てローカル完結
-   - テレメトリ・アナリティクス等も現時点では入れない
-
-3. **不要なnpm依存の追加禁止**
-   - 新規依存を追加する時は必ず人間に相談
-   - 特にUIコンポーネントライブラリ（MUI/Chakra等）は入れない（Tailwind素で書く）
-
-4. **勝手にアーキテクチャを変更しない**
-   - モノリシックがマイクロサービスに化けたりしない
-   - 勝手にフォルダ構成を大きく変えない
-
-## コーディング規範
-
-### 言語と命名
-
-- **UI文言は日本語ベース**（初期ターゲットが日本語圏のミステリ好き・ガジェット好き層のため）
-- **コード内のコメント・変数名は英語**
-- **ドメイン用語は一貫性を保つ**：
-  - 事件 = Case
-  - 容疑者 = Suspect
-  - 手がかり = Clue
-  - 迷宮入り = ColdCase
-  - 助手 = Assistant（ユーザー）
-  - 主任探偵 = LeadDetective（AI）
-  - 事件簿 = Casebook（蓄積データ）
-
-### 品質基準
-
-- **型安全**：TypeScriptの`any`は避ける。`unknown`を経由する
-- **エラーハンドリング**：Promise chainにcatchを必ず書く。WebSocketは再接続ロジック前提
-- **テスト**：Phase 0は検証優先で薄め、Phase 1以降で主要ロジックに単体テストを入れる
-- **コミット粒度**：1コミット1変更理由。`chore:` `feat:` `fix:` `docs:` プレフィックス推奨
-
-## Phase 0 特有のルール（現フェーズ）
-
-現在Phase 0（プロンプト検証）では、以下を優先：
-
-1. **実装の美しさより仮説検証**を優先
-2. **プロンプト・GBNF・テストケース**は`experiments/phase0-prompt/`配下に全て置く
-3. **検証結果はresults/に日付入りで保存**（LLM出力の再現性検証のため）
-4. **agents構成は使わない**（設計しながら試すフェーズのため軽量運用）
-
-## Claude Code への期待される振る舞い
-
-### ✅ 期待される挙動
-- ファイル編集前に必ず全体像を読む
-- 不確実な判断は人間に相談する
+- TDD で開発する（探索 → Red → Green → Refactoring）
+- KPI やカバレッジ目標が与えられたら、達成するまで試行する
+- 不明瞭な指示は質問して明確にする
 - 実装前に「何を・なぜ・どうやるか」を短く述べる
-- テストケースを自分で考えて足す
-- llama.cpp関連のエラーは公式ドキュメントを優先参照
+- Phase 0 は検証優先で薄め、Phase 1 以降で主要ロジックに単体テストを入れる
 
-### ❌ 避けるべき挙動
-- 勝手な技術スタック変更（例：Fastify→Express置き換え）
-- 過剰な抽象化（YAGNI原則を守る）
-- ドメイン用語の勝手な英訳（例：「容疑者」を`Target`に変える等）
-- 本プロジェクトと無関係な一般的ベストプラクティス提案で時間を奪う
+# コード設計
+
+- 関心の分離を保つ
+- 状態とロジックを分離する
+- 可読性と保守性を重視する
+- コントラクト層（API/型）を厳密に定義し、実装層は再生成可能に保つ
+- YAGNI を尊重し、過剰抽象化・shared/パッケージを避ける
+
+# 技術スタック（固定）
+
+変更提案がある場合は必ず人間に相談する。Redux/Jotai/Express/Hono/Ollama/UI コンポーネントライブラリは禁止。
+
+- フロントエンド: React 18 + Vite + TypeScript + Tailwind CSS + Zustand + Web Speech API + vite-plugin-pwa
+- バックエンド: Node.js 20+ + Fastify + @fastify/websocket + better-sqlite3 + openai npm
+- LLM: llama.cpp server + Gemma 4 E4B (Q4_K_M) + response_format json_schema（GBNF も llama.cpp 内部で等価に扱われる。Phase 1a は json_schema を採用）
+- E2E: playwright
+- 開発環境: mkcert（HTTPS、Web Speech API 必須）
+
+# 絶対禁止事項
+
+- クラウド AI API（OpenAI/Anthropic/Gemini 等）への送信コードを書かない
+- 事件記録・捜査ログ・音声・画像データの外部送信禁止
+- テレメトリ・アナリティクスも導入しない
+- 新規 npm 依存の追加は必ず人間に相談
+- UI コンポーネントライブラリ（MUI/Chakra 等）は使わない（Tailwind 素）
+- モノリシックをマイクロサービスに化けさせない
+- フォルダ構成を勝手に大きく変えない
+
+# 言語
+
+- UI 文言は日本語（初期ターゲットが日本語圏のミステリ好き・ガジェット好き層）
+- コード内のコメント・変数名は英語
+- docs/ 配下と README は日本語（個人プロジェクト段階、OSS 開放時に英訳検討）
+- コミットメッセージは英語プレフィックス（`chore:` `feat:` `fix:` `docs:` 等）+ 日本語本文可
+
+# ドメイン用語
+
+- 事件 = Case
+- 容疑者 = Suspect
+- 手がかり = Clue
+- 迷宮入り = ColdCase
+- 助手 = Assistant（ユーザー）
+- 主任探偵 = LeadDetective（AI）
+- 事件簿 = Casebook（蓄積データ）
+
+# 品質基準
+
+- TypeScript の `any` は避ける、`unknown` 経由
+- Promise chain に catch を必ず書く
+- WebSocket は再接続ロジック前提
+- コミット粒度は 1 コミット 1 変更理由
+
+# Phase 0 特有のルール
+
+- 実装の美しさより仮説検証を優先
+- プロンプト・GBNF・テストケースは `experiments/phase0-prompt/` 配下
+- 検証結果は `results/` に日付入りで保存
+- agents 構成は Phase 0 では使わない
+
+Phase 1 以降は `.claude/agents/` の architect / implementer を利用。
+
+# Claude Code への期待
+
+期待する挙動:
+
+- ファイル編集前に全体像を読む
+- 不確実な判断は人間に相談する
+- テストケースを自分で考えて足す
+- llama.cpp 関連のエラーは公式ドキュメントを優先参照
+
+避ける挙動:
+
+- 勝手な技術スタック変更（例: Fastify → Express）
+- 過剰な抽象化
+- ドメイン用語の勝手な英訳（例: 「容疑者」を `Target` に変える）
+- 本プロジェクトと無関係な一般論提案で時間を奪う
 - 勝手なパッケージ追加
 
-### ロール分離（Phase 1以降で導入予定）
+# 参考リンク
 
-Phase 1以降、`.claude/agents/architect.md`と`implementer.md`を導入して**設計と実装の分離**を行う予定。Phase 0では不要。
+- llama.cpp: https://github.com/ggerganov/llama.cpp
+- GBNF guide: https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md
+- Fastify: https://fastify.dev/
+- Web Speech API (MDN): https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API
 
-## 参考リンク
+# 開発者
 
-- [llama.cpp](https://github.com/ggerganov/llama.cpp)
-- [llama.cpp GBNF guide](https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md)
-- [Fastify](https://fastify.dev/)
-- [Web Speech API (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
+So（日本 / Windows + RTX 4060 Ti 8GB）
 
-## 開発者：So（日本・Windows + RTX 4060 Ti 8GB）
-
-環境特有の注意点：
-- llama.cpp serverはWindows上で直接起動する前提
-- スマホからのアクセスは同一Wi-Fi + Windowsファイアウォール許可が必要な場合あり
-- 8GB VRAMでGemma 4 E4Bを運用。Qwen 3.5 9Bは量子化とオフロード設定次第
+- llama.cpp server は Windows 上で直接起動
+- スマホからのアクセスは同一 Wi-Fi + Windows ファイアウォール許可
+- 8GB VRAM で Gemma 4 E4B を運用、Qwen 3.5 9B は量子化とオフロード設定次第
